@@ -2,11 +2,13 @@
 import { computed, ref } from 'vue'
 import { useWindowSize } from '@vueuse/core'
 
-import { scaleNumToRange } from '../composables/useUtils'
-
 const { width, height } = useWindowSize()
 
 const props = defineProps({
+  id: {
+    type: String,
+    required: true,
+  },
   x: { // center pos
     type: Number,
     required: true,
@@ -29,17 +31,14 @@ const props = defineProps({
   }
 })
 
+const emit = defineEmits<{
+  (e: 'pick', id: string): void,
+}>()
+
 // current vals
 const cR = ref(props.r)
 const cY = ref(props.y - cR.value)
 const cX = computed(() => props.x - cR.value)
-
-const color = computed(() => {
-  const scaledR = scaleNumToRange(cR.value, 10, props.maxR, 0, 1)
-  const green = Math.min(2 - (2 * scaledR), 1) * 255;
-  const red = Math.min(2 * scaledR, 1) * 255;
-  return `rgb(${red}, ${green}, 0)`
-})
 
 // anim vars
 let start : undefined | number
@@ -103,19 +102,29 @@ function step(timestamp: number) {
 
   // if done, start falling
   if (done) {
-    start = undefined
-    previousTimeStamp = undefined
-    done = false
-    window.requestAnimationFrame(fallAnim)
+    setTimeout(() => {
+      start = undefined
+      previousTimeStamp = undefined
+      done = false
+      window.requestAnimationFrame(fallAnim)
+    }, 1000)
   }
 }
 
 window.requestAnimationFrame(step)
 
+const isPicked = ref(false)
+function pick() {
+  if (cR.value + 1 >= props.maxR) {
+    isPicked.value = true
+    setTimeout(() => { emit('pick', props.id) }, 1000)
+  }
+}
+
 </script>
 
 <template>
-  <div class="apple"></div>
+  <div class="apple" :class="{ ripe: cR >= maxR, picked: isPicked }"  @click="pick"></div>
 </template>
 
 
@@ -127,7 +136,17 @@ window.requestAnimationFrame(step)
   position: absolute;
   top: v-bind(cY + 'px');
   left: v-bind(cX + 'px');
-  background: v-bind(color);
+  background-color: #C7E45D;
+  outline: 2px solid #3A9F21;
+  transition: background-color .5s, opacity .3s;
+
+  &.ripe {
+    background-color: #EC360B;
+  }
+
+  &.picked {
+    opacity: 0
+  }
 }
 
 </style>
