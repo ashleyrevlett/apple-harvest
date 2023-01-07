@@ -72,6 +72,8 @@ for (let row = 1; row <= maxRow; row++) {
 
 <style scoped>
 section {
-  background: green;
+  background: #37A72D;
+  width: 100vw;
+  height: 100vh;
 }
 </style>
