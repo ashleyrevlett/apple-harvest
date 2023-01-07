@@ -1,23 +1,37 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { useWindowSize } from '@vueuse/core'
-import { useUtils, scaleNumToRange } from '../composables/useUtils'
+import { scaleNumToRange } from '../composables/useUtils'
 
-const { width, height } = useWindowSize()
-const { randomNumberInRange } = useUtils()
+const props = defineProps({
+  x: { // center pos
+    type: Number,
+    required: true,
+  },
+  y: { // center pos
+    type: Number,
+    required: true,
+  },
+  r: { // radius
+    type: Number,
+    required: true,
+  },
+  speed: {
+    type: Number,
+    required: true,
+  },
+  maxR: {
+    type: Number,
+    required: true,
+  }
+})
 
-const minR = 10
-const maxR = 100
-const r = ref(randomNumberInRange(minR, maxR))
-
-const startingX = randomNumberInRange(r.value, width.value)
-const startingY = randomNumberInRange(r.value, height.value)
-
-const x = computed(() => startingX - (r.value / 2))
-const y = computed(() => startingY - (r.value / 2))
+// current vals
+const cR = ref(props.r)
+const cX = computed(() => props.x - cR.value)
+const cY = computed(() => props.y - cR.value)
 
 const color = computed(() => {
-  const scaledR = scaleNumToRange(r.value, 10, 100, 0, 1)
+  const scaledR = scaleNumToRange(cR.value, 10, props.maxR, 0, 1)
   const green = Math.min(2 - (2 * scaledR), 1) * 255;
   const red = Math.min(2 * scaledR, 1) * 255;
   return `rgb(${red}, ${green}, 0)`
@@ -28,18 +42,22 @@ let previousTimeStamp : undefined | number
 let done = false
 
 function step(timestamp: number) {
+  // first loop
   if (start === undefined) {
-    start = timestamp;
-    }
-  const elapsed = timestamp - start;
-
-  if (previousTimeStamp !== timestamp) {
-    // Math.min() is used here to make sure the element stops at exactly 200px
-    r.value = Math.min(r.value + (0.0001 * elapsed), maxR)
-    if (r.value >= maxR) done = true
+    start = timestamp
   }
 
-  if (r.value <= maxR) { // Stop the animation after 2 seconds
+  // calc time elapsed since last frame
+  const elapsed = timestamp - start
+
+  // increase radius until it is max size
+  if (previousTimeStamp !== timestamp) {
+    cR.value = Math.min(cR.value + ((1 / props.speed) * elapsed), props.maxR)
+    if (cR.value >= props.maxR) done = true
+  }
+
+  // if not full size yet, do another anim step
+  if (cR.value <= props.maxR) {
     previousTimeStamp = timestamp
     if (!done) {
       window.requestAnimationFrame(step)
@@ -48,13 +66,6 @@ function step(timestamp: number) {
 }
 
 window.requestAnimationFrame(step)
-
-// const color = computed(() => {
-//   // const scaledR = scaleNumToRange(r, 10, 100, 0, 130)
-//   const hue =  scaleNumToRange(r, 10, 100, 0, 130)
-//   const sat = scaleNumToRange(r, 10, 100, 50, 90)
-//   return `hsl(${hue.toFixed()}, ${sat.toFixed()}%, 50%)`
-// })
 
 </script>
 
@@ -65,12 +76,12 @@ window.requestAnimationFrame(step)
 
 <style scoped>
 .apple {
-  width: v-bind(r + 'px');
-  height: v-bind(r + 'px');
+  width: v-bind(cR * 2 + 'px');
+  height: v-bind(cR * 2 + 'px');
   border-radius: 50%;
   position: absolute;
-  top: v-bind(y + 'px');
-  left: v-bind(x + 'px');
+  top: v-bind(cY + 'px');
+  left: v-bind(cX + 'px');
   background: v-bind(color);
 }
 
