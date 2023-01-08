@@ -121,6 +121,9 @@ function pick() {
   }
 }
 
+const el = ref()
+defineExpose({ cX, cY, cR, pick })
+
 </script>
 
 <template>
@@ -138,7 +141,8 @@ function pick() {
   left: v-bind(cX + 'px');
   background-color: #C7E45D;
   outline: 2px solid #3A9F21;
-  transition: background-color .5s, opacity .3s;
+  transition: background-color .5s, opacity .1s;
+  z-index: 1;
 
   &.ripe {
     background-color: #EC360B;

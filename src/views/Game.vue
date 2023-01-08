@@ -1,14 +1,15 @@
 <script setup lang="ts">
 import { ref, Ref } from 'vue'
 import Apple from '../components/Apple.vue'
+import Pig from '../components/Pig.vue'
 import { useWindowSize } from '@vueuse/core'
 import { useUtils } from '../composables/useUtils'
 
 const { randomNumberInRange } = useUtils()
 const { width, height } = useWindowSize()
 
-const minR = Math.floor(width.value / 80)
-const maxR = Math.floor(width.value / 20)
+const minR = Math.floor(width.value / 100)
+const maxR = Math.floor(width.value / 25)
 const cellWidth = (maxR * 2)
 const maxCol = width.value / cellWidth / 2
 const maxRow = (height.value - maxR) / cellWidth / 2
@@ -68,15 +69,41 @@ function createApple(col: number, row: number, generation: number) {
 function pickApple(id: string) {
   // remove and replace picked apple
   const idx = apples.value.findIndex((a) => a.id == id)
-  console.log(id, idx)
   if (idx > -1) {
     const oldID = apples.value[idx].id
     const coords = oldID.split('-')
     const newApple = createApple(parseInt(coords[0]), parseInt(coords[1]), parseInt(coords[2])+1)
-    console.log("nwe:", newApple)
     apples.value = apples.value.filter((a) => a.id != oldID)
     apples.value.splice(idx, 0, newApple)
   }
+}
+
+function detectCircleCollision(x1: number, y1: number, r1: number, x2:number, y2:number, r2:number) {
+  const dx = x1 - x2
+  const dy = y1 - y2
+  const distance = Math.sqrt(dx * dx + dy * dy)
+  const colliding = distance < r1 + r2
+  return colliding
+}
+
+const appleRefs = ref<HTMLElement[]>([])
+const itemRefs : Ref<InstanceType<typeof Apple>[]> = ref([])
+// const skipUnwrap = { itemRefs }
+
+const pigR = ref(maxR * 2)
+let times = 0
+function movePig(x: number, y: number) {
+  itemRefs.value.forEach((a) => {
+    // const div = a.el
+    // console.log(a, a.value, typeof a)
+    // var rect = a.el.getBoundingClientRect()
+    // console.log(rect.top, rect.right, rect.bottom, rect.left)
+    if (detectCircleCollision(a.cX, a.cY, a.cR, x, y, pigR.value)) {
+      console.log(a.cX, a.cY, a.cR, a)
+      console.log("Collision", a)
+      a.pick()
+    }
+  })
 }
 
 </script>
@@ -85,6 +112,7 @@ function pickApple(id: string) {
   <section>
     <Apple
       v-for="a in apples"
+      ref="itemRefs"
       @pick="pickApple"
       :id="a.id"
       :x="a.x"
@@ -92,7 +120,9 @@ function pickApple(id: string) {
       :r="a.r"
       :speed="a.speed"
       :maxR="maxR"
-      :key="a.id" />
+      :key="a.id"
+    />
+    <Pig :r="pigR" @move="movePig" />
   </section>
 </template>
 
